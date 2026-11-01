@@ -557,6 +557,9 @@
                                 <i class="fa-solid fa-pen-ruler"></i> 評分與配分
                             </a>
                             <!-- 編輯課程按鈕 -->
+                            <button type="button" class="ai-summary-btn" data-id="{{ tc_item.course.id }}" style="background-color: #0dcaf0; color: white; border: none; padding: 4px 8px; font-size: 12px; border-radius: 4px; margin-right: 6px; cursor: pointer; display: inline-block; min-width: 65px; height: 26px; line-height: 18px; text-align: center; vertical-align: middle;">
+                                AI摘要
+                            </button>
                             <button type="button" class="btn btn-outline-primary" style="font-size: 0.8rem; padding: 0.35rem 0.65rem;"
                                 data-id="{{ tc_item.course.id }}"
                                 data-code="{{ tc_item.course.code }}"
@@ -766,6 +769,9 @@
                                 </form>
                             </td>
                             <td class="col-actions">
+                                <button type="button" class="ai-summary-btn" data-id="{{ course.id }}" style="background-color: #0dcaf0; color: white; border: none; padding: 4px 8px; font-size: 12px; border-radius: 4px; margin-right: 6px; cursor: pointer; display: inline-block; min-width: 65px; height: 26px; line-height: 18px; text-align: center; vertical-align: middle;">
+                                    AI摘要
+                                </button>
                                 <button type="button" 
                                         class="btn btn-secondary" 
                                         style="padding: 0.2rem 0.5rem; font-size: 0.75rem;"
@@ -2037,6 +2043,50 @@
             }
         });
     }
+</script>
+<!-- AI 摘要專用漂亮的彈出視窗 (Modal) -->
+<div id="aiSummaryModal" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); background:white; border:1px solid #dee2e6; box-shadow: 0 .5rem 1rem rgba(0,0,0,.15); padding:25px; z-index:9999; border-radius:12px; width:450px; font-family: system-ui, -apple-system, sans-serif;">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; border-bottom:1px solid #eee; padding-bottom:10px;">
+        <h4 style="margin:0; color:#0dcaf0;">✨ AI 課程亮點摘要</h4>
+    </div>
+    <div id="aiSummaryContent" style="color:#495057; font-size:0.95rem; line-height:1.6; white-space: pre-line; margin-bottom:20px;">
+        正在分析課程大綱，請稍候...
+    </div>
+    <div style="text-align:right;">
+        <button onclick="document.getElementById('aiSummaryModal').style.display='none'" class="btn btn-secondary btn-sm" style="padding: 0.2rem 0.75rem; font-size: 0.85rem;">關閉</button>
+    </div>
+</div>
+
+<script>
+document.querySelectorAll('.ai-summary-btn').forEach(button => {
+    button.addEventListener('click', function() {
+        const courseId = this.getAttribute('data-id');
+        const modal = document.getElementById('aiSummaryModal');
+        const content = document.getElementById('aiSummaryContent');
+
+        modal.style.display = 'block';
+        content.innerHTML = '<div style="text-align:center; padding:10px;">🤖 正在請 AI 閱讀大綱，請稍候...</div>';
+
+        fetch(`/manage/course/${courseId}/ai-summary/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}',
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                content.innerText = data.summary;
+            } else {
+                content.innerHTML = `<span style="color:#dc3545;">⚠️ 摘要失敗：${data.error}</span>`;
+            }
+        })
+        .catch(error => {
+            content.innerHTML = `<span style="color:#dc3545;">⚠️ 連線發生錯誤</span>`;
+        });
+    });
+});
 </script>
 {% endblock %}
 
