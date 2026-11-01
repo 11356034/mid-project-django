@@ -14,6 +14,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include('pages.urls')),
     path('academics/', include('academics.urls')),
+    path('recovery/', include('recovery.urls')),
     # 強制支援靜態資源服務（透過反向代理或 Tunnel 訪問能即時更新，防止瀏覽器或 Cloudflare 快取舊圖片）
     re_path(r'^static/(?P<path>.*)$', no_cache_serve, {'document_root': settings.BASE_DIR / 'html'}),
     re_path(r'^media/(?P<path>.*)$', no_cache_serve, {'document_root': settings.MEDIA_ROOT}),
