@@ -142,3 +142,29 @@ MEDIA_ROOT = BASE_DIR / 'media'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+
+# ==============================================================================
+# 正式上線網頁資訊安全等級防護 (Production Information Security Hardening)
+# ==============================================================================
+
+# 防點擊劫持 (Clickjacking Protection)
+X_FRAME_OPTIONS = 'DENY'
+
+# 防止瀏覽器 MIME 探測攻擊 (MIME-Sniffing Protection)
+SECURE_CONTENT_TYPE_NOSNIFF = True
+
+# 瀏覽器跨站腳本保護 (XSS Filter Protection)
+SECURE_BROWSER_XSS_FILTER = True
+
+# Session 與 Cookie 安全等級強化 (防範 XSS 竊取 Session 與 CSRF 跨站冒用)
+SESSION_COOKIE_HTTPONLY = True
+CSRF_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SAMESITE = 'Lax'
+CSRF_COOKIE_SAMESITE = 'Lax'
+
+# 關閉瀏覽器後 Session 自動作廢（符合高等教育校務系統資安規範，防止公用電腦遺留權限）
+SESSION_EXPIRE_AT_BROWSER_CLOSE = True
+
+# 閒置 Session 有效期限：30 分鐘（1800 秒）
+SESSION_COOKIE_AGE = 1800

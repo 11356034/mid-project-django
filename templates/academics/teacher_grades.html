@@ -1,0 +1,520 @@
+{% extends 'base.html' %}
+
+{% block title %}成績評分與配分管理 • 資訊管理學系 選課系統{% endblock %}
+
+{% block extra_head %}
+<style>
+.grade-panel {
+    max-width: 1200px;
+    margin: 1.5rem auto 3.5rem;
+}
+.card-box {
+    background: #ffffff;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    margin-bottom: 1.5rem;
+}
+.card-box-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    border-bottom: 1px solid #e2e8f0;
+    padding-bottom: 1rem;
+    margin-bottom: 1.25rem;
+}
+.filter-row {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    flex-wrap: wrap;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    padding: 1rem 1.25rem;
+    border-radius: 6px;
+    margin-bottom: 1.25rem;
+}
+.weight-card {
+    background: #fdfefe;
+    border: 1px dashed #cbd5e1;
+    border-radius: 6px;
+    padding: 1.15rem;
+    margin-bottom: 1.25rem;
+}
+.weight-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+    margin-top: 0.75rem;
+}
+.score-input {
+    width: 75px;
+    padding: 0.4rem 0.5rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 4px;
+    text-align: center;
+    font-weight: 700;
+    font-size: 0.9rem;
+    background: #ffffff;
+}
+.score-input:focus {
+    border-color: #2563eb;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(37,99,235,0.15);
+}
+.score-input:disabled, .score-input[readonly] {
+    background: #f1f5f9;
+    color: #94a3b8;
+    cursor: not-allowed;
+    border-color: #e2e8f0;
+}
+.badge-lock {
+    background: #fee2e2;
+    color: #b91c1c;
+    font-size: 0.725rem;
+    padding: 0.2rem 0.45rem;
+    border-radius: 4px;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.2rem;
+    font-weight: 600;
+}
+.badge-unlock {
+    background: #dcfce7;
+    color: #15803d;
+    font-size: 0.725rem;
+    padding: 0.2rem 0.45rem;
+    border-radius: 4px;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.2rem;
+    font-weight: 600;
+}
+.calc-live-total {
+    font-weight: 800;
+    font-size: 0.95rem;
+}
+.calc-live-passed {
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+}
+@media (max-width: 768px) {
+    .weight-grid { grid-template-columns: repeat(2, 1fr); }
+    .score-input { width: 60px; font-size: 0.8rem; }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="grade-panel">
+    <!-- 麵包屑 -->
+    <div style="margin-bottom: 1rem; font-size: 0.85rem; color: #64748b;">
+        <a href="{% url 'pages:index' %}" style="color: var(--univ-navy); text-decoration: none;">
+            <i class="fa-solid fa-house"></i> 首頁
+        </a>
+        <span style="margin: 0 0.4rem;">/</span>
+        <a href="{% url 'pages:teacher_courses' %}" style="color: var(--univ-navy); text-decoration: none;">
+            我的授課課程
+        </a>
+        <span style="margin: 0 0.4rem;">/</span>
+        <span style="color: #334155; font-weight: 600;">學生成績登記與配分管理</span>
+    </div>
+
+    <!-- 頂部標題與說明 -->
+    <div class="card-box">
+        <div class="card-box-header">
+            <div>
+                <h2 style="font-size: 1.35rem; font-weight: 800; color: var(--univ-navy); margin: 0; display: flex; align-items: center; gap: 0.5rem;">
+                    <i class="fa-solid fa-pen-ruler"></i> 授課教師成績登記與評分標準管理
+                </h2>
+                <p style="font-size: 0.85rem; color: #64748b; margin: 0.4rem 0 0;">
+                    請選擇開設之課程與班級，自訂平時成績配分比例並登錄修課學生個別成績。總成績達 60 分為過關。
+                </p>
+            </div>
+            <!-- 期中期末時限狀態看板與日期模擬 -->
+            <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 0.35rem;">
+                <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+                    <span style="font-size: 0.8rem; color: #64748b;">
+                        <i class="fa-regular fa-calendar-days"></i> 系統日期：<strong>{{ current_date|date:"Y-m-d" }}</strong>
+                    </span>
+                    {% if midterm_open %}
+                        <span class="badge-unlock"><i class="fa-solid fa-lock-open"></i> 期中考已開放填寫</span>
+                    {% else %}
+                        <span class="badge-lock" title="開放時間：每年 11/6 與 11/23 起（含當天）"><i class="fa-solid fa-lock"></i> 期中考未開放 (11/6起)</span>
+                    {% endif %}
+
+                    {% if final_open %}
+                        <span class="badge-unlock"><i class="fa-solid fa-lock-open"></i> 期末考已開放填寫</span>
+                    {% else %}
+                        <span class="badge-lock" title="開放時間：每年 1/8 與 6/29 起（含當天）"><i class="fa-solid fa-lock"></i> 期末考未開放 (1/8起)</span>
+                    {% endif %}
+                </div>
+
+                <!-- 測試模式模擬切換器（供快速展示各時段開放與防護效果） -->
+                <div style="font-size: 0.75rem; color: #94a3b8; display: flex; gap: 0.35rem; align-items: center; margin-top: 0.2rem;">
+                    <span>模擬時段測試：</span>
+                    <a href="{% url 'academics:simulate_date' %}?date=2026-11-01" class="btn btn-outline-secondary" style="padding: 0.15rem 0.4rem; font-size: 0.7rem;">11/1 (期中未開放)</a>
+                    <a href="{% url 'academics:simulate_date' %}?date=2026-11-06" class="btn btn-outline-primary" style="padding: 0.15rem 0.4rem; font-size: 0.7rem;">11/6 (期中開放)</a>
+                    <a href="{% url 'academics:simulate_date' %}?date=2027-01-08" class="btn btn-outline-success" style="padding: 0.15rem 0.4rem; font-size: 0.7rem;">1/8 (期末開放)</a>
+                    {% if simulated_date_str %}
+                        <a href="{% url 'academics:simulate_date' %}?date=reset" style="color: #dc2626; margin-left: 0.25rem;">重設真實日期</a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- 選擇課程與班級篩選 -->
+        <form method="GET" action="{% url 'academics:teacher_grades' %}" id="filterForm">
+            <div class="filter-row">
+                <div style="display: flex; align-items: center; gap: 0.5rem; flex: 1; min-width: 260px;">
+                    <label style="font-weight: 700; color: #334155; white-space: nowrap;">
+                        <i class="fa-solid fa-book-bookmark" style="color: var(--univ-navy);"></i> 選擇授課課程：
+                    </label>
+                    <select name="course_id" class="form-control" style="font-weight: 700; color: var(--univ-navy);" onchange="document.getElementById('filterForm').submit();">
+                        {% for c in taught_courses %}
+                            <option value="{{ c.id }}" {% if selected_course and selected_course.id == c.id %}selected{% endif %}>
+                                [{{ c.code }}] {{ c.name }} ({{ c.target_class }}，{{ c.credits }}學分)
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div style="display: flex; align-items: center; gap: 0.5rem; min-width: 200px;">
+                    <label style="font-weight: 700; color: #334155; white-space: nowrap;">
+                        <i class="fa-solid fa-users-viewfinder" style="color: var(--univ-navy);"></i> 選擇修課班級：
+                    </label>
+                    <select name="student_class" class="form-control" style="font-weight: 600;" onchange="document.getElementById('filterForm').submit();">
+                        <option value="ALL" {% if selected_class == 'ALL' %}selected{% endif %}>全部修課班級 ({{ student_count }} 人)</option>
+                        {% for cls in enrolled_classes %}
+                            <option value="{{ cls }}" {% if selected_class == cls %}selected{% endif %}>{{ cls }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div style="margin-left: auto; display: flex; gap: 0.5rem; align-items: center; font-size: 0.85rem; color: #475569;">
+                    <span>修課人數: <strong>{{ student_count }}</strong> 人</span>
+                    <span style="color: #cbd5e1;">|</span>
+                    <span style="color: #15803d;"><i class="fa-solid fa-check"></i> 及格: <strong>{{ passed_count }}</strong></span>
+                    <span style="color: #cbd5e1;">|</span>
+                    <span style="color: #b91c1c;"><i class="fa-solid fa-xmark"></i> 不及格: <strong>{{ failed_count }}</strong></span>
+                    <span style="color: #cbd5e1;">|</span>
+                    <span style="color: #0284c7;"><i class="fa-solid fa-hourglass-start"></i> 評定中: <strong>{{ in_progress_count }}</strong></span>
+                </div>
+            </div>
+        </form>
+
+        <!-- 主要成績登錄與配分表單 -->
+        <form method="POST" action="{% url 'academics:teacher_grades' %}" id="gradesForm">
+            {% csrf_token %}
+            <input type="hidden" name="course_id" value="{{ selected_course.id }}">
+            <input type="hidden" name="student_class" value="{{ selected_class }}">
+
+            <!-- 配分設定卡片 -->
+            <div class="weight-card">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+                    <div>
+                        <strong style="color: var(--univ-navy); font-size: 0.95rem;">
+                            <i class="fa-solid fa-sliders"></i> 自訂成績評分標準百分比配分
+                        </strong>
+                        <span style="font-size: 0.8rem; color: #64748b; margin-left: 0.5rem;">
+                            總成績 100% ＝ <strong>平時成績 50%</strong> ＋ <strong>期中考 25%</strong> ＋ <strong>期末考 25%</strong>
+                        </span>
+                    </div>
+                    <div style="font-size: 0.825rem;" id="weightSumText">
+                        平時成績項目加總：<strong id="weightSumValue" style="color: #15803d;">100%</strong>
+                    </div>
+                </div>
+
+                <div class="weight-grid">
+                    <div>
+                        <label style="font-size: 0.825rem; font-weight: 700; color: #334155; display: block; margin-bottom: 0.25rem;">
+                            <i class="fa-solid fa-clipboard-user" style="color: #0284c7;"></i> 1. 點名佔比 (%)
+                        </label>
+                        <input type="number" name="attendance_weight" id="w_att" class="form-control" min="0" max="100" value="{{ policy.attendance_weight }}" oninput="updateWeights();" required>
+                    </div>
+                    <div>
+                        <label style="font-size: 0.825rem; font-weight: 700; color: #334155; display: block; margin-bottom: 0.25rem;">
+                            <i class="fa-solid fa-hand" style="color: #8b5cf6;"></i> 2. 上課態度佔比 (%)
+                        </label>
+                        <input type="number" name="attitude_weight" id="w_atti" class="form-control" min="0" max="100" value="{{ policy.attitude_weight }}" oninput="updateWeights();" required>
+                    </div>
+                    <div>
+                        <label style="font-size: 0.825rem; font-weight: 700; color: #334155; display: block; margin-bottom: 0.25rem;">
+                            <i class="fa-solid fa-file-lines" style="color: #f59e0b;"></i> 3. 課堂作業佔比 (%)
+                        </label>
+                        <input type="number" name="assignment_weight" id="w_asg" class="form-control" min="0" max="100" value="{{ policy.assignment_weight }}" oninput="updateWeights();" required>
+                    </div>
+                    <div>
+                        <label style="font-size: 0.825rem; font-weight: 700; color: #334155; display: block; margin-bottom: 0.25rem;">
+                            <i class="fa-solid fa-pencil" style="color: #10b981;"></i> 4. 小考佔比 (%)
+                        </label>
+                        <input type="number" name="quiz_weight" id="w_qz" class="form-control" min="0" max="100" value="{{ policy.quiz_weight }}" oninput="updateWeights();" required>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 學生成績輸入表格 -->
+            <div style="overflow-x: auto; border: 1px solid #e2e8f0; border-radius: 6px;">
+                <table class="table-custom" id="gradingTable" style="margin: 0;">
+                    <thead>
+                        <tr>
+                            <th style="width: 50px;">序號</th>
+                            <th style="width: 130px; text-align: left;">帳號 / 學號</th>
+                            <th style="width: 100px; text-align: left;">學生姓名</th>
+                            <th style="width: 90px;">班級</th>
+                            <!-- 平時成績各項目 (0-100) -->
+                            <th style="background: #f8fafc; width: 85px;" title="隨時可填寫">點名</th>
+                            <th style="background: #f8fafc; width: 85px;" title="隨時可填寫">態度</th>
+                            <th style="background: #f8fafc; width: 85px;" title="隨時可填寫">作業</th>
+                            <th style="background: #fffbeb; width: 85px;" title="隨時可填寫">小考</th>
+                            <th style="background: #f1f5f9; width: 95px;" title="依權重計算之平時加權得分">平時總分 (50%)</th>
+                            <!-- 考試成績 (各25%) -->
+                            <th style="background: #eff6ff; width: 110px;">
+                                期中考 (25%)<br>
+                                {% if midterm_open %}
+                                    <span class="badge-unlock">已開放</span>
+                                {% else %}
+                                    <span class="badge-lock">11/6起開放</span>
+                                {% endif %}
+                            </th>
+                            <th style="background: #eff6ff; width: 110px;">
+                                期末考 (25%)<br>
+                                {% if final_open %}
+                                    <span class="badge-unlock">已開放</span>
+                                {% else %}
+                                    <span class="badge-lock">1/8起開放</span>
+                                {% endif %}
+                            </th>
+                            <th style="background: #ecfdf5; width: 90px;">總成績 (100%)</th>
+                            <th style="width: 90px;">過關判定</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in students_data %}
+                        <tr data-student-id="{{ row.grade.id }}">
+                            <td style="color: #64748b;">{{ forloop.counter }}</td>
+                            <td style="text-align: left;">
+                                <strong style="color: var(--univ-navy);">{{ row.student.username }}</strong>
+                                <div style="font-size: 0.725rem; color: #64748b;">學號: {{ row.profile.student_id|default:row.student.username }}</div>
+                            </td>
+                            <td style="text-align: left; font-weight: 700; color: #1e293b;">
+                                {{ row.student.first_name|default:row.student.username }}
+                            </td>
+                            <td>
+                                <span class="badge-tag" style="background: #f8fafc; border: 1px solid #cbd5e1; color: var(--univ-navy);">
+                                    {{ row.profile.student_class|default:"資管一甲" }}
+                                </span>
+                            </td>
+
+                            <!-- 點名 -->
+                            <td>
+                                <input type="number" step="0.1" min="0" max="100" name="attendance_{{ row.grade.id }}" 
+                                    class="score-input input-att" value="{{ row.grade.attendance_score|default_if_none:'' }}" 
+                                    placeholder="0-100" oninput="recalcRow(this);">
+                            </td>
+                            <!-- 態度 -->
+                            <td>
+                                <input type="number" step="0.1" min="0" max="100" name="attitude_{{ row.grade.id }}" 
+                                    class="score-input input-atti" value="{{ row.grade.attitude_score|default_if_none:'' }}" 
+                                    placeholder="0-100" oninput="recalcRow(this);">
+                            </td>
+                            <!-- 作業 -->
+                            <td>
+                                <input type="number" step="0.1" min="0" max="100" name="assignment_{{ row.grade.id }}" 
+                                    class="score-input input-asg" value="{{ row.grade.assignment_score|default_if_none:'' }}" 
+                                    placeholder="0-100" oninput="recalcRow(this);">
+                            </td>
+                            <!-- 小考 -->
+                            <td style="background: #fffbeb;">
+                                <input type="number" step="0.1" min="0" max="100" name="quiz_{{ row.grade.id }}" 
+                                    class="score-input input-qz" value="{{ row.grade.quiz_score|default_if_none:'' }}" 
+                                    placeholder="0-100" style="border-color: #fde68a;" oninput="recalcRow(this);">
+                            </td>
+
+                            <!-- 平時成績總分即時顯示 (50%) -->
+                            <td style="background: #f8fafc;">
+                                <span class="calc-live-reg" style="font-weight: 700; color: #1e293b;">
+                                    {{ row.regular_score|default:'-' }}
+                                </span>
+                            </td>
+
+                            <!-- 期中考 (25%) -->
+                            <td style="background: #eff6ff;">
+                                {% if midterm_open %}
+                                    <input type="number" step="0.1" min="0" max="100" name="midterm_{{ row.grade.id }}" 
+                                        class="score-input input-mid" value="{{ row.grade.midterm_score|default_if_none:'' }}" 
+                                        placeholder="0-100" style="border-color: #bfdbfe;" oninput="recalcRow(this);">
+                                {% else %}
+                                    <input type="number" class="score-input input-mid" value="{{ row.grade.midterm_score|default_if_none:'' }}" 
+                                        readonly title="期中考成績尚未開放填寫（每年 11/6 與 11/23 起開放）">
+                                    <input type="hidden" name="midterm_{{ row.grade.id }}" value="{{ row.grade.midterm_score|default_if_none:'' }}">
+                                {% endif %}
+                            </td>
+
+                            <!-- 期末考 (25%) -->
+                            <td style="background: #eff6ff;">
+                                {% if final_open %}
+                                    <input type="number" step="0.1" min="0" max="100" name="final_{{ row.grade.id }}" 
+                                        class="score-input input-fin" value="{{ row.grade.final_score|default_if_none:'' }}" 
+                                        placeholder="0-100" style="border-color: #bfdbfe;" oninput="recalcRow(this);">
+                                {% else %}
+                                    <input type="number" class="score-input input-fin" value="{{ row.grade.final_score|default_if_none:'' }}" 
+                                        readonly title="期末考成績尚未開放填寫（每年 1/8 與 6/29 起開放）">
+                                    <input type="hidden" name="final_{{ row.grade.id }}" value="{{ row.grade.final_score|default_if_none:'' }}">
+                                {% endif %}
+                            </td>
+
+                            <!-- 總成績即時顯示 (100%) -->
+                            <td style="background: #ecfdf5;">
+                                <span class="calc-live-total" style="color: {% if row.total_score and row.total_score >= 60 %}#15803d{% elif row.total_score %}#b91c1c{% else %}#64748b{% endif %};">
+                                    {{ row.total_score|default:'-' }}
+                                </span>
+                            </td>
+
+                            <!-- 過關判定 -->
+                            <td>
+                                {% if row.is_passed is True %}
+                                    <span class="calc-live-passed badge-pass"><i class="fa-solid fa-check"></i> 及格過關</span>
+                                {% elif row.is_passed is False %}
+                                    <span class="calc-live-passed badge-fail"><i class="fa-solid fa-xmark"></i> 不及格</span>
+                                {% else %}
+                                    <span class="calc-live-passed badge-progress"><i class="fa-solid fa-hourglass-start"></i> 評分中</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="13" style="text-align: center; padding: 2.5rem; color: #94a3b8;">
+                                <i class="fa-solid fa-user-xmark" style="font-size: 2rem; margin-bottom: 0.5rem; display: block;"></i>
+                                此班級目前尚無學生選修本課程。
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- 底部動作按鈕 -->
+            <div style="margin-top: 1.5rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
+                <div style="font-size: 0.85rem; color: #64748b;">
+                    <i class="fa-solid fa-circle-info"></i> 提示：填寫完成後請點擊下方按鈕儲存。成績將即時同步至學生端之學分進度審查表。
+                </div>
+                <div style="display: flex; gap: 0.75rem;">
+                    <a href="{% url 'pages:teacher_courses' %}" class="btn btn-secondary">
+                        <i class="fa-solid fa-arrow-left"></i> 返回開課清單
+                    </a>
+                    <button type="submit" class="btn btn-primary" style="padding: 0.55rem 1.5rem; font-weight: 700; font-size: 0.95rem;">
+                        <i class="fa-solid fa-floppy-disk"></i> 儲存學生成績與配分標準
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function getWeights() {
+    var att = parseFloat(document.getElementById('w_att').value) || 0;
+    var atti = parseFloat(document.getElementById('w_atti').value) || 0;
+    var asg = parseFloat(document.getElementById('w_asg').value) || 0;
+    var qz = parseFloat(document.getElementById('w_qz').value) || 0;
+    return { att: att, atti: atti, asg: asg, qz: qz };
+}
+
+function updateWeights() {
+    var w = getWeights();
+    var sum = w.att + w.atti + w.asg + w.qz;
+    var textEl = document.getElementById('weightSumValue');
+    textEl.textContent = sum + '%';
+    if (sum === 100) {
+        textEl.style.color = '#15803d';
+    } else {
+        textEl.style.color = '#dc2626';
+    }
+    // 重新計算每一列
+    var rows = document.querySelectorAll('#gradingTable tbody tr');
+    rows.forEach(function(r) {
+        var anyInput = r.querySelector('.score-input');
+        if (anyInput) recalcRow(anyInput);
+    });
+}
+
+function recalcRow(inputEl) {
+    var row = inputEl.closest('tr');
+    if (!row) return;
+
+    var w = getWeights();
+    var attEl = row.querySelector('.input-att');
+    var attiEl = row.querySelector('.input-atti');
+    var asgEl = row.querySelector('.input-asg');
+    var qzEl = row.querySelector('.input-qz');
+    var midEl = row.querySelector('.input-mid');
+    var finEl = row.querySelector('.input-fin');
+
+    var att = attEl && attEl.value !== '' ? parseFloat(attEl.value) : null;
+    var atti = attiEl && attiEl.value !== '' ? parseFloat(attiEl.value) : null;
+    var asg = asgEl && asgEl.value !== '' ? parseFloat(asgEl.value) : null;
+    var qz = qzEl && qzEl.value !== '' ? parseFloat(qzEl.value) : null;
+    var mid = midEl && midEl.value !== '' ? parseFloat(midEl.value) : null;
+    var fin = finEl && finEl.value !== '' ? parseFloat(finEl.value) : null;
+
+    // 計算平時成績
+    var weightedSum = 0;
+    var totalW = 0;
+    if (att !== null && w.att > 0) { weightedSum += att * w.att; totalW += w.att; }
+    if (atti !== null && w.atti > 0) { weightedSum += atti * w.atti; totalW += w.atti; }
+    if (asg !== null && w.asg > 0) { weightedSum += asg * w.asg; totalW += w.asg; }
+    if (qz !== null && w.qz > 0) { weightedSum += qz * w.qz; totalW += w.qz; }
+
+    var regScore = totalW > 0 ? (weightedSum / totalW) : null;
+    var regSpan = row.querySelector('.calc-live-reg');
+    if (regSpan) {
+        regSpan.textContent = regScore !== null ? regScore.toFixed(1) : '-';
+    }
+
+    // 計算總成績：平時成績 50% + 期中考 25% + 期末考 25%
+    var totalScore = 0;
+    var hasScore = false;
+    if (regScore !== null) { totalScore += regScore * 0.5; hasScore = true; }
+    if (mid !== null) { totalScore += mid * 0.25; hasScore = true; }
+    if (fin !== null) { totalScore += fin * 0.25; hasScore = true; }
+
+    var totSpan = row.querySelector('.calc-live-total');
+    var passSpan = row.querySelector('.calc-live-passed');
+
+    if (hasScore) {
+        var rounded = Math.round(totalScore * 10) / 10;
+        if (totSpan) {
+            totSpan.textContent = rounded.toFixed(1);
+            totSpan.style.color = rounded >= 60 ? '#15803d' : '#b91c1c';
+        }
+        if (passSpan) {
+            if (rounded >= 60) {
+                passSpan.className = 'calc-live-passed badge-pass';
+                passSpan.innerHTML = '<i class="fa-solid fa-check"></i> 及格過關';
+            } else if (fin !== null) {
+                passSpan.className = 'calc-live-passed badge-fail';
+                passSpan.innerHTML = '<i class="fa-solid fa-xmark"></i> 不及格';
+            } else {
+                passSpan.className = 'calc-live-passed badge-progress';
+                passSpan.innerHTML = '<i class="fa-solid fa-hourglass-start"></i> 評分中';
+            }
+        }
+    } else {
+        if (totSpan) {
+            totSpan.textContent = '-';
+            totSpan.style.color = '#64748b';
+        }
+        if (passSpan) {
+            passSpan.className = 'calc-live-passed badge-progress';
+            passSpan.innerHTML = '<i class="fa-solid fa-hourglass-start"></i> 評分中';
+        }
+    }
+}
+</script>
+{% endblock %}

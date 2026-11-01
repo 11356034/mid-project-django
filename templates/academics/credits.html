@@ -1,55 +1,355 @@
 {% extends 'base.html' %}
 
-{% block title %}學分進度追蹤{% endblock %}
+{% block title %}當前學期學分&成績 • 資訊管理學系 選課系統{% endblock %}
 
 {% block extra_head %}
 <style>
-.credit-page{max-width:1000px;margin:0 auto}.credit-card{background:#fff;border:1px solid #dee2e6;border-radius:10px;padding:22px;margin-bottom:18px;box-shadow:0 2px 8px rgba(0,0,0,.04)}
-.credit-title{color:#1b365d;margin-bottom:8px}.credit-muted{color:#6c757d}.credit-progress{height:14px;background:#e9ecef;border-radius:20px;overflow:hidden;margin:12px 0}.credit-progress>span{display:block;height:100%;background:#198754;border-radius:20px}
-.credit-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.credit-stat{background:#f4f6f9;border-radius:8px;padding:16px}.credit-stat strong{display:block;font-size:25px;color:#1b365d}.credit-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.credit-form p{margin:0}.credit-form label{display:block;font-weight:600;margin-bottom:5px}.form-control{width:100%;padding:10px;border:1px solid #ced4da;border-radius:6px;background:#fff}.credit-btn{border:0;border-radius:6px;padding:10px 16px;background:#1b5e9b;color:#fff;cursor:pointer;font-weight:600}.credit-delete{background:#dc3545;padding:6px 10px;font-size:12px}.credit-table{width:100%;border-collapse:collapse}.credit-table th,.credit-table td{padding:11px;border-bottom:1px solid #e9ecef;text-align:left}.credit-table th{background:#f4f6f9}.credit-alert{padding:10px 14px;background:#d1e7dd;color:#0f5132;border-radius:6px;margin-bottom:12px}
-@media(max-width:650px){.credit-stats{grid-template-columns:1fr}.credit-form{grid-template-columns:1fr}.credit-table{font-size:13px}.credit-card{padding:15px}}
+.credit-container {
+    max-width: 1140px;
+    margin: 1.5rem auto 3rem;
+}
+.credit-header-card {
+    background: #ffffff;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    box-shadow: 0 2px 10px rgba(0,0,0,0.04);
+    padding: 1.75rem;
+    margin-bottom: 1.5rem;
+}
+.credit-grid-stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+    margin-top: 1.25rem;
+}
+.credit-stat-box {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 1.15rem;
+    text-align: center;
+    transition: transform 0.2s;
+}
+.credit-stat-box:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+.credit-stat-num {
+    font-size: 2rem;
+    font-weight: 800;
+    color: var(--univ-navy);
+    line-height: 1.2;
+}
+.credit-stat-label {
+    font-size: 0.825rem;
+    color: #64748b;
+    margin-top: 0.35rem;
+    font-weight: 600;
+}
+.progress-bar-wrap {
+    height: 14px;
+    background: #e2e8f0;
+    border-radius: 999px;
+    overflow: hidden;
+    margin: 1rem 0 0.5rem;
+}
+.progress-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #10b981, #059669);
+    border-radius: 999px;
+    transition: width 0.6s ease;
+}
+.grade-table-wrap {
+    background: #ffffff;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    box-shadow: 0 2px 10px rgba(0,0,0,0.04);
+    overflow: hidden;
+}
+.grade-table-header {
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid var(--border-color);
+    background: #fafbfc;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+.table-custom {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.875rem;
+}
+.table-custom th {
+    background: #f8fafc;
+    padding: 0.9rem 0.85rem;
+    font-weight: 700;
+    color: #334155;
+    border-bottom: 2px solid #e2e8f0;
+    text-align: center;
+}
+.table-custom td {
+    padding: 0.9rem 0.85rem;
+    border-bottom: 1px solid #f1f5f9;
+    vertical-align: middle;
+    text-align: center;
+}
+.table-custom tr:hover {
+    background: #fdfefe;
+}
+.badge-pass {
+    background: #dcfce7;
+    color: #15803d;
+    padding: 0.3rem 0.65rem;
+    border-radius: 4px;
+    font-weight: 700;
+    font-size: 0.775rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+.badge-fail {
+    background: #fee2e2;
+    color: #b91c1c;
+    padding: 0.3rem 0.65rem;
+    border-radius: 4px;
+    font-weight: 700;
+    font-size: 0.775rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+.badge-progress {
+    background: #e0f2fe;
+    color: #0369a1;
+    padding: 0.3rem 0.65rem;
+    border-radius: 4px;
+    font-weight: 700;
+    font-size: 0.775rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+@media (max-width: 768px) {
+    .credit-grid-stats { grid-template-columns: repeat(2, 1fr); }
+    .table-custom { font-size: 0.775rem; }
+}
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="credit-page">
-    <div class="credit-card">
-        <h2 class="credit-title"><i class="fa-solid fa-graduation-cap"></i> 我的學分進度</h2>
-        <p class="credit-muted">這裡統計你手動登錄的「已完成課程」，不會將目前尚在修讀的選課紀錄算入已取得學分。</p>
-        <h1 style="font-size:32px;color:#198754;margin-top:18px">{{ total_credits }} <small style="font-size:16px;color:#6c757d">/ {{ graduation_credits }} 學分</small></h1>
-        <div class="credit-progress"><span style="width:{{ progress_percent }}%"></span></div>
-        <p class="credit-muted">畢業學分進度 {{ progress_percent }}%（示範門檻，請依學校規定調整）</p>
-        <div class="credit-stats" style="margin-top:18px">
-            <div class="credit-stat"><span>必修學分</span><strong>{{ required_credits }}</strong><small class="credit-muted">目標 {{ required_target }} 學分</small></div>
-            <div class="credit-stat"><span>選修學分</span><strong>{{ elective_credits }}</strong><small class="credit-muted">目標 {{ elective_target }} 學分</small></div>
-            <div class="credit-stat"><span>已完成課程</span><strong>{{ records|length }}</strong><small class="credit-muted">筆修課紀錄</small></div>
+<div class="credit-container">
+    <!-- 麵包屑導航 -->
+    <div style="margin-bottom: 1rem; font-size: 0.85rem; color: #64748b;">
+        <a href="{% url 'pages:index' %}" style="color: var(--univ-navy); text-decoration: none;">
+            <i class="fa-solid fa-house"></i> 首頁
+        </a>
+        <span style="margin: 0 0.4rem;">/</span>
+        <span style="color: #334155; font-weight: 600;">學生學分&成績</span>
+    </div>
+
+    <!-- 正式網頁資安與校務規範提示橫幅 -->
+    <div style="background: #eef2ff; border: 1px solid #c7d2fe; border-radius: 8px; padding: 1rem 1.25rem; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.85rem; color: #3730a3; font-size: 0.9rem;">
+        <i class="fa-solid fa-shield-halved" style="font-size: 1.5rem; color: #4f46e5; flex-shrink: 0;"></i>
+        <div>
+            <strong style="color: #312e81;">校務資訊安全與成績認證機制：</strong>
+            本系統各科修課學分、平時小考與期中期末成績<strong>全數由各科目任課老師正式登記審核</strong>，取消學生手動自填。
+            科目總成績達 <strong>60 分（含）以上為及格過關</strong>，系統自動核計入當前學期通過學分。
         </div>
     </div>
 
-    <div class="credit-card">
-        <h3 class="credit-title">新增已完成課程</h3>
-        <p class="credit-muted" style="margin-bottom:14px">請輸入已經修畢的課程。這個版本先採手動登錄，之後可再串接成績資料。</p>
-        {% if messages %}{% for message in messages %}<div class="credit-alert">{{ message }}</div>{% endfor %}{% endif %}
-        <form method="post">
-            {% csrf_token %}
-            {% if form.non_field_errors %}<div class="credit-alert">{{ form.non_field_errors }}</div>{% endif %}
-            <div class="credit-form">
-                {% for field in form %}
-                <p><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{% if field.help_text %}<small class="credit-muted">{{ field.help_text }}</small>{% endif %}{% for error in field.errors %}<small style="color:#dc3545">{{ error }}</small>{% endfor %}</p>
-                {% endfor %}
+    <!-- 當前學期學分總覽卡片 -->
+    <div class="credit-header-card">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 0.75rem;">
+            <div>
+                <h2 style="font-size: 1.4rem; font-weight: 800; color: var(--univ-navy); margin: 0; display: flex; align-items: center; gap: 0.5rem;">
+                    <i class="fa-solid fa-graduation-cap"></i> 當前學期學分&成績
+                </h2>
+                <p style="font-size: 0.85rem; color: #64748b; margin: 0.4rem 0 0;">
+                    學生姓名：<strong>{{ request.user.first_name|default:request.user.username }}</strong>（學號: {{ request.user.profile.student_id|default:request.user.username }}，班級: {{ request.user.profile.student_class|default:"資管一甲" }}）
+                </p>
             </div>
-            <button class="credit-btn" type="submit" style="margin-top:16px"><i class="fa-solid fa-plus"></i> 新增紀錄</button>
-        </form>
+            <div style="text-align: right;">
+                <span class="badge-tag" style="background: #f1f5f9; color: #334155; font-size: 0.85rem; font-weight: 700; padding: 0.35rem 0.75rem;">
+                    <i class="fa-regular fa-calendar-check"></i> {{ semester_name }}
+                </span>
+                <div style="font-size: 1.15rem; font-weight: 800; color: var(--univ-navy); margin-top: 0.35rem;">
+                    本學期修讀：{{ total_enrolled_credits }} 學分
+                </div>
+            </div>
+        </div>
+
+        <!-- 當前學期過關進度條 -->
+        <div class="progress-bar-wrap">
+            <div class="progress-bar-fill" style="width: {{ progress_percent }}%;"></div>
+        </div>
+        <div style="display: flex; justify-content: space-between; font-size: 0.8rem; color: #64748b; font-weight: 600;">
+            <span>本學期過關進度：<strong style="color: #059669;">{{ progress_percent }}%</strong></span>
+            <span>本學期已過關學分：<strong>{{ passed_credits }}</strong> / {{ total_enrolled_credits }} 學分</span>
+        </div>
+
+        <!-- 當前學期四格統計卡片 -->
+        <div class="credit-grid-stats">
+            <div class="credit-stat-box">
+                <div class="credit-stat-num" style="color: #059669;">{{ passed_credits }}</div>
+                <div class="credit-stat-label"><i class="fa-solid fa-award"></i> 本學期已過關學分</div>
+                <div style="font-size: 0.725rem; color: #94a3b8; margin-top: 0.2rem;">總修讀 {{ total_enrolled_credits }} 學分</div>
+            </div>
+            <div class="credit-stat-box">
+                <div class="credit-stat-num" style="color: #2563eb;">{{ required_enrolled_credits }}</div>
+                <div class="credit-stat-label"><i class="fa-solid fa-bookmark"></i> 本學期必修學分</div>
+                <div style="font-size: 0.725rem; color: #94a3b8; margin-top: 0.2rem;">共 {{ required_course_count }} 門必修 (已過關: {{ required_passed_credits }})</div>
+            </div>
+            <div class="credit-stat-box">
+                <div class="credit-stat-num" style="color: #7c3aed;">{{ elective_enrolled_credits }}</div>
+                <div class="credit-stat-label"><i class="fa-solid fa-layer-group"></i> 本學期選修學分</div>
+                <div style="font-size: 0.725rem; color: #94a3b8; margin-top: 0.2rem;">共 {{ elective_course_count }} 門選修 (已過關: {{ elective_passed_credits }})</div>
+            </div>
+            <div class="credit-stat-box">
+                <div class="credit-stat-num" style="color: #ea580c;">{{ in_progress_credits }}</div>
+                <div class="credit-stat-label"><i class="fa-solid fa-hourglass-half"></i> 待結算/評定中學分</div>
+                <div style="font-size: 0.725rem; color: #94a3b8; margin-top: 0.2rem;">共 {{ courses|length }} 門課程</div>
+            </div>
+        </div>
     </div>
 
-    <div class="credit-card">
-        <h3 class="credit-title">已完成課程紀錄</h3>
-        {% if records %}
-        <div style="overflow-x:auto"><table class="credit-table"><thead><tr><th>課程名稱</th><th>學期</th><th>類別</th><th>學分</th><th>成績</th><th>操作</th></tr></thead><tbody>
-        {% for record in records %}<tr><td>{{ record.course_name }}</td><td>{{ record.semester }}</td><td>{{ record.get_category_display }}</td><td>{{ record.credits }}</td><td>{{ record.grade|default:'-' }}</td><td><form method="post" action="{% url 'academics:delete_credit' record.id %}" onsubmit="return confirm('確定刪除這筆修課紀錄？')">{% csrf_token %}<button class="credit-btn credit-delete" type="submit">刪除</button></form></td></tr>{% endfor %}
-        </tbody></table></div>
-        {% else %}<p class="credit-muted">目前還沒有已完成課程紀錄，請使用上方表單新增。</p>{% endif %}
+    <!-- 課程與成績明細表（完全呈現學分、期中期末考、小考與平時成績） -->
+    <div class="grade-table-wrap">
+        <div class="grade-table-header">
+            <div>
+                <h3 style="margin: 0; font-size: 1.1rem; color: var(--univ-navy); font-weight: 700; display: flex; align-items: center; gap: 0.4rem;">
+                    <i class="fa-solid fa-list-check"></i> 當前學期修讀課程成績與學分核算清單
+                </h3>
+                <p style="margin: 0.25rem 0 0; font-size: 0.8rem; color: #64748b;">
+                    總成績配分標準：平時成績 50%（含小考、課堂作業、點名、態度）＋ 期中考 25% ＋ 期末考 25%
+                </p>
+            </div>
+            <div style="font-size: 0.825rem; color: #475569;">
+                本學期修讀：<strong>{{ courses|length }}</strong> 門課程 (合計 <strong>{{ total_enrolled_credits }}</strong> 學分)
+            </div>
+        </div>
+
+        <div style="overflow-x: auto;">
+            <table class="table-custom">
+                <thead>
+                    <tr>
+                        <th style="width: 90px;">課程代碼</th>
+                        <th style="text-align: left; min-width: 170px;">課程名稱</th>
+                        <th style="width: 70px;">類別</th>
+                        <th style="width: 60px;">學分</th>
+                        <th style="width: 90px;">授課教師</th>
+                        <th style="width: 130px; background: #f1f5f9;" title="平時成績佔 50%">平時成績 (50%)</th>
+                        <th style="width: 85px; background: #fef3c7;" title="平時考/小考成績">小考成績</th>
+                        <th style="width: 95px; background: #e0f2fe;" title="期中考佔 25%（每年11/6與11/23起填寫）">期中考 (25%)</th>
+                        <th style="width: 95px; background: #e0f2fe;" title="期末考佔 25%（每年1/8與6/29起填寫）">期末考 (25%)</th>
+                        <th style="width: 85px; background: #dcfce7; font-weight: 800;">總成績</th>
+                        <th style="width: 100px;">考核結果</th>
+                        <th style="width: 85px;">採計學分</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in courses %}
+                    <tr>
+                        <td><code>{{ item.course.code }}</code></td>
+                        <td style="text-align: left; font-weight: 600; color: var(--univ-navy);">
+                            {{ item.course.name }}
+                        </td>
+                        <td>
+                            {% if item.course.category == 'REQUIRED' %}
+                                <span class="badge-tag badge-required" style="font-size: 0.75rem;">必修</span>
+                            {% else %}
+                                <span class="badge-tag badge-elective" style="font-size: 0.75rem;">選修</span>
+                            {% endif %}
+                        </td>
+                        <td style="font-weight: 700;">{{ item.course.credits }}</td>
+                        <td style="color: #475569;">{{ item.course.teacher }}</td>
+                        <!-- 平時成績 -->
+                        <td style="background: #fafbfc;">
+                            {% if item.regular_score is not None %}
+                                <strong style="color: #1e293b; font-size: 0.95rem;">{{ item.regular_score }}</strong>
+                                <div style="font-size: 0.7rem; color: #64748b; margin-top: 0.2rem;" title="細項分數">
+                                    {% if item.attendance_score is not None %}點:{{ item.attendance_score|floatformat:0 }} {% endif %}
+                                    {% if item.attitude_score is not None %}態:{{ item.attitude_score|floatformat:0 }} {% endif %}
+                                    {% if item.assignment_score is not None %}作:{{ item.assignment_score|floatformat:0 }} {% endif %}
+                                </div>
+                            {% else %}
+                                <span style="color: #94a3b8;">評定中</span>
+                            {% endif %}
+                        </td>
+                        <!-- 小考成績 -->
+                        <td style="background: #fffbeb; font-weight: 600;">
+                            {% if item.quiz_score is not None %}
+                                <span style="color: #b45309; font-size: 0.95rem;">{{ item.quiz_score }}</span>
+                            {% else %}
+                                <span style="color: #94a3b8;">-</span>
+                            {% endif %}
+                        </td>
+                        <!-- 期中考成績 (25%) -->
+                        <td style="background: #f0f9ff; font-weight: 600;">
+                            {% if item.midterm_score is not None %}
+                                <span style="color: #0284c7; font-size: 0.95rem;">{{ item.midterm_score }}</span>
+                            {% else %}
+                                <span style="color: #94a3b8; font-size: 0.75rem;"><i class="fa-solid fa-lock"></i> 未登錄</span>
+                            {% endif %}
+                        </td>
+                        <!-- 期末考成績 (25%) -->
+                        <td style="background: #f0f9ff; font-weight: 600;">
+                            {% if item.final_score is not None %}
+                                <span style="color: #0284c7; font-size: 0.95rem;">{{ item.final_score }}</span>
+                            {% else %}
+                                <span style="color: #94a3b8; font-size: 0.75rem;"><i class="fa-solid fa-lock"></i> 未登錄</span>
+                            {% endif %}
+                        </td>
+                        <!-- 總成績 -->
+                        <td style="background: #f0fdf4; font-weight: 800; font-size: 1rem;">
+                            {% if item.total_score is not None %}
+                                {% if item.total_score >= 60 %}
+                                    <span style="color: #15803d;">{{ item.total_score }}</span>
+                                {% else %}
+                                    <span style="color: #b91c1c;">{{ item.total_score }}</span>
+                                {% endif %}
+                            {% else %}
+                                <span style="color: #94a3b8; font-size: 0.8rem;">評定中</span>
+                            {% endif %}
+                        </td>
+                        <!-- 考核結果 -->
+                        <td>
+                            {% if item.is_passed is True %}
+                                <span class="badge-pass"><i class="fa-solid fa-circle-check"></i> 及格通過</span>
+                            {% elif item.is_passed is False %}
+                                <span class="badge-fail"><i class="fa-solid fa-circle-xmark"></i> 未通過</span>
+                            {% else %}
+                                <span class="badge-progress"><i class="fa-solid fa-clock"></i> 修讀中</span>
+                            {% endif %}
+                        </td>
+                        <!-- 採計學分 -->
+                        <td>
+                            {% if item.is_passed is True %}
+                                <strong style="color: #15803d; font-size: 0.95rem;">+{{ item.earned_credits }}</strong>
+                            {% else %}
+                                <span style="color: #94a3b8;">0</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="12" style="padding: 2.5rem; color: #94a3b8; text-align: center;">
+                            <i class="fa-solid fa-inbox" style="font-size: 2rem; margin-bottom: 0.5rem; display: block;"></i>
+                            目前尚未有當前學期選課修讀紀錄。請至 <a href="{% url 'pages:electives' %}" style="color: var(--univ-navy); font-weight: 600;">選課系統</a> 進行課程加選。
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
     </div>
-    <p class="credit-muted" style="text-align:center"><a href="{% url 'pages:index' %}">返回選課系統</a></p>
+
+    <!-- 底部返回按鈕 -->
+    <div style="margin-top: 1.5rem; text-align: center;">
+        <a href="{% url 'pages:index' %}" class="btn btn-outline-primary" style="padding: 0.5rem 1.25rem;">
+            <i class="fa-solid fa-arrow-left"></i> 返回選課首頁與動態課表
+        </a>
+    </div>
 </div>
 {% endblock %}

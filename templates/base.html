@@ -947,8 +947,13 @@ body {
                         {% endif %}
                     </div>
                     {% if request.user.profile.role == 'STUDENT' %}
-                    <a href="{% url 'academics:credits' %}" class="btn-settings" title="學分進度">
+                    <a href="{% url 'academics:credits' %}" class="btn-settings" title="學分&成績">
                         <i class="fa-solid fa-graduation-cap"></i> 學分進度
+                    </a>
+                    {% endif %}
+                    {% if request.user.profile.role == 'TEACHER' or is_admin %}
+                    <a href="{% url 'academics:teacher_grades' %}" class="btn-settings" title="成績評分與配分管理">
+                        <i class="fa-solid fa-pen-ruler"></i> 成績評分
                     </a>
                     {% endif %}
                     <a href="{% url 'pages:profile_settings' %}" class="btn-settings" title="個人設定">

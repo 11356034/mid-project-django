@@ -1,9 +1,6 @@
 from django.contrib import admin
-from .models import CompletedCourse
+from .models import CompletedCourse, CourseGradingPolicy, StudentGrade
 
-
-@admin.register(CompletedCourse)
-class CompletedCourseAdmin(admin.ModelAdmin):
-    list_display = ('course_name', 'user', 'credits', 'category', 'semester', 'grade')
-    list_filter = ('category', 'semester')
-    search_fields = ('course_name', 'user__username', 'user__first_name')
+admin.site.register(CompletedCourse)
+admin.site.register(CourseGradingPolicy)
+admin.site.register(StudentGrade)

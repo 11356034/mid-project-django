@@ -8,8 +8,23 @@ from django.http import JsonResponse, HttpResponseForbidden
 from django.views.decorators.http import require_POST
 from django.db.models import Q
 
+from django.core.cache import cache
+
 from .models import Course, Enrollment, UserProfile
 from .utils import init_demo_data, create_student_account, create_teacher_account
+
+# 登入資安防護常數：連續登入失敗 5 次，鎖定 5 分鐘（300 秒）
+LOGIN_MAX_FAILED_ATTEMPTS = 5
+LOGIN_LOCK_SECONDS = 300
+
+def _get_client_ip(request):
+    """獲取客戶端真實 IP 位址（支援反向代理）"""
+    x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+    if x_forwarded_for:
+        ip = x_forwarded_for.split(',')[0].strip()
+    else:
+        ip = request.META.get('REMOTE_ADDR', '127.0.0.1')
+    return ip
 
 # 依據圖片第二張完整時段排程
 PERIOD_INFO = [
@@ -254,16 +269,38 @@ def index(request, tab=None):
 
 
 def login_view(request):
-    """手動登入頁面與身分驗證"""
+    """使用者登入（具備防暴力破解頻率限制與資訊安全防護）"""
     # 若已登入直接轉至首頁
     if request.user.is_authenticated:
         return redirect('pages:index')
 
     if request.method == 'POST':
+        client_ip = _get_client_ip(request)
         uname = request.POST.get('username', '').strip()
         pwd = request.POST.get('password', '').strip()
+
+        # 防暴力破解：鎖定鍵（同時針對 IP 與帳號進行頻率限制）
+        ip_lock_key = f'login_fail_ip:{client_ip}'
+        user_lock_key = f'login_fail_user:{uname.lower()}' if uname else None
+
+        ip_attempts = cache.get(ip_lock_key, 0)
+        user_attempts = cache.get(user_lock_key, 0) if user_lock_key else 0
+
+        if ip_attempts >= LOGIN_MAX_FAILED_ATTEMPTS or user_attempts >= LOGIN_MAX_FAILED_ATTEMPTS:
+            messages.error(request, "登入失敗次數過多，為維護帳號資訊安全，系統已暫時限制登入，請於 5 分鐘後再試。")
+            return render(request, 'login.html')
+
+        if not uname or not pwd:
+            messages.error(request, "請輸入使用者帳號與密碼。")
+            return render(request, 'login.html')
+
         user = authenticate(request, username=uname, password=pwd)
-        if user:
+        if user and user.is_active:
+            # 登入成功：清除失敗次數計數器
+            cache.delete(ip_lock_key)
+            if user_lock_key:
+                cache.delete(user_lock_key)
+
             login(request, user)
             display_name = user.first_name if user.first_name else user.username
             messages.success(request, f"登入成功！歡迎 {display_name} 進入系統。")
@@ -274,7 +311,12 @@ def login_view(request):
             else:
                 return redirect('pages:timetable')
         else:
-            messages.error(request, "帳號或密碼輸入錯誤，請重新登入！(學生: student / student123；管理員: admin / admin123；教師: chenkw / teacher123)")
+            # 登入失敗：累計失敗次數
+            cache.set(ip_lock_key, ip_attempts + 1, LOGIN_LOCK_SECONDS)
+            if user_lock_key:
+                cache.set(user_lock_key, user_attempts + 1, LOGIN_LOCK_SECONDS)
+
+            messages.error(request, "帳號或密碼輸入錯誤，請重新確認後再試。")
 
     return render(request, 'login.html')
 
@@ -674,7 +716,7 @@ def add_student(request):
     gender_display = student_user.profile.get_gender_display()
     messages.success(
         request,
-        f"成功新增學生：【{name}】（帳號: {username}，班級: {student_class}，性別: {gender_display}）！預設密碼為 {password}。"
+        f"成功新增學生：【{name}】（帳號: {username}，班級: {student_class}，性別: {gender_display}）！已完成帳號與必修課表建立。"
     )
     return redirect('pages:students_roster')
 
@@ -751,7 +793,7 @@ def add_teacher(request):
 
     messages.success(
         request,
-        f"成功新增教師：【{name}】（帳號: {username}）！預設密碼為 {password}，已可指派授課課程或登入系統管理開課。"
+        f"成功新增教師：【{name}】（帳號: {username}）！已可指派授課課程或由教師登入系統管理開課。"
     )
     return redirect('pages:students_roster')
 

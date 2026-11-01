@@ -4,8 +4,11 @@ from django.urls import reverse
 from pages.models import Course, Enrollment, UserProfile
 from pages.utils import init_demo_data, create_student_account, create_teacher_account
 
+from django.core.cache import cache
+
 class CourseSelectionTestCase(TestCase):
     def setUp(self):
+        cache.clear()
         self.client = Client()
         self.admin_user, self.student_user = init_demo_data()
 
@@ -766,3 +769,32 @@ class CourseSelectionTestCase(TestCase):
 
 
 
+
+    def test_login_failure_does_not_leak_credentials(self):
+        """登入失敗訊息不得洩漏帳號密碼資訊（符合資安規範）"""
+        res = self.client.post(reverse('pages:login'), {
+            'username': 'student',
+            'password': 'wrongpassword'
+        }, follow=True)
+        self.assertEqual(res.status_code, 200)
+        self.assertContains(res, '帳號或密碼輸入錯誤，請重新確認後再試。')
+        self.assertNotContains(res, 'student123')
+        self.assertNotContains(res, 'admin123')
+        self.assertNotContains(res, 'teacher123')
+
+    def test_login_rate_limiting_brute_force_protection(self):
+        """連續登入失敗超過上限應觸發防暴力破解鎖定限制"""
+        for _ in range(5):
+            res = self.client.post(reverse('pages:login'), {
+                'username': 'student',
+                'password': 'wrongpassword'
+            }, follow=True)
+            self.assertEqual(res.status_code, 200)
+
+        # 第 6 次嘗試應直接被資安頻率限制攔截
+        res_blocked = self.client.post(reverse('pages:login'), {
+            'username': 'student',
+            'password': 'student123'
+        }, follow=True)
+        self.assertEqual(res_blocked.status_code, 200)
+        self.assertContains(res_blocked, '登入失敗次數過多，為維護帳號資訊安全')

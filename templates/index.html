@@ -552,6 +552,10 @@
                             </div>
                         </div>
                         <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+                            <!-- 登記成績與配分按鈕 -->
+                            <a href="{% url 'academics:teacher_grades' %}?course_id={{ tc_item.course.id }}" class="btn btn-primary" style="font-size: 0.8rem; padding: 0.35rem 0.65rem;" title="登記學生成績與自訂平時配分">
+                                <i class="fa-solid fa-pen-ruler"></i> 評分與配分
+                            </a>
                             <!-- 編輯課程按鈕 -->
                             <button type="button" class="btn btn-outline-primary" style="font-size: 0.8rem; padding: 0.35rem 0.65rem;"
                                 data-id="{{ tc_item.course.id }}"
@@ -1115,8 +1119,8 @@
                         </select>
                     </div>
                     <div class="form-group">
-                        <label class="form-label">預設登入密碼</label>
-                        <input type="text" name="password" class="form-control" value="student123" placeholder="預設: student123">
+                        <label class="form-label">初始登入密碼 (選填)</label>
+                        <input type="password" name="password" class="form-control" placeholder="留空則使用預設密碼" autocomplete="new-password">
                     </div>
                 </div>
 
@@ -1167,8 +1171,8 @@
                         <input type="text" name="username" class="form-control" placeholder="例如: chenkw, teacher01" required>
                     </div>
                     <div class="form-group">
-                        <label class="form-label">預設登入密碼</label>
-                        <input type="text" name="password" class="form-control" value="teacher123" placeholder="預設: teacher123">
+                        <label class="form-label">初始登入密碼 (選填)</label>
+                        <input type="password" name="password" class="form-control" placeholder="留空則使用預設密碼" autocomplete="new-password">
                     </div>
                 </div>
 
