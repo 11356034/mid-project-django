@@ -18,7 +18,7 @@
 }
 .credit-grid-stats {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(5, 1fr);
     gap: 1rem;
     margin-top: 1.25rem;
 }
@@ -192,6 +192,11 @@
         <!-- 當前學期四格統計卡片 -->
         <div class="credit-grid-stats">
             <div class="credit-stat-box">
+                <div class="credit-stat-num" style="color: #1b365d;">{% if gpa is not None %}{{ gpa }}{% else %}-{% endif %}</div>
+                <div class="credit-stat-label"><i class="fa-solid fa-ranking-star"></i> 本學期 GPA (4.3 制)</div>
+                <div style="font-size: 0.725rem; color: #94a3b8; margin-top: 0.2rem;">已評定 {{ gpa_course_count }} 門課，依學分加權</div>
+            </div>
+            <div class="credit-stat-box">
                 <div class="credit-stat-num" style="color: #059669;">{{ passed_credits }}</div>
                 <div class="credit-stat-label"><i class="fa-solid fa-award"></i> 本學期已過關學分</div>
                 <div style="font-size: 0.725rem; color: #94a3b8; margin-top: 0.2rem;">總修讀 {{ total_enrolled_credits }} 學分</div>
@@ -244,6 +249,7 @@
                         <th style="width: 95px; background: #e0f2fe;" title="期中考佔 25%（每年11/6與11/23起填寫）">期中考 (25%)</th>
                         <th style="width: 95px; background: #e0f2fe;" title="期末考佔 25%（每年1/8與6/29起填寫）">期末考 (25%)</th>
                         <th style="width: 85px; background: #dcfce7; font-weight: 800;">總成績</th>
+                        <th style="width: 70px;" title="依總成績換算等第與績點">等第</th>
                         <th style="width: 100px;">考核結果</th>
                         <th style="width: 85px;">採計學分</th>
                     </tr>
@@ -312,6 +318,10 @@
                             {% else %}
                                 <span style="color: #94a3b8; font-size: 0.8rem;">評定中</span>
                             {% endif %}
+                        </td>
+                        <!-- 等第 / 績點 -->
+                        <td>
+                            {% if item.letter %}<strong>{{ item.letter }}</strong> <span style="color: #64748b; font-size: 0.75rem;">({{ item.gp }})</span>{% else %}<span style="color: #94a3b8; font-size: 0.8rem;">-</span>{% endif %}
                         </td>
                         <!-- 考核結果 -->
                         <td>

@@ -174,3 +174,51 @@ class AcademicsGradingTests(TestCase):
         policy = self.course.grading_policy
         self.assertEqual(policy.attendance_weight, 20)
         self.assertEqual(policy.quiz_weight, 30)
+
+
+class GpaTestCase(TestCase):
+    """GPA 與等第換算，以及學生「學分&成績」頁顯示。"""
+
+    def test_letter_and_gp_boundaries(self):
+        from decimal import Decimal
+        from academics.gpa import score_to_letter_gp
+        self.assertEqual(score_to_letter_gp(90), ("A+", Decimal("4.3")))
+        self.assertEqual(score_to_letter_gp(89.9), ("A", Decimal("4.0")))
+        self.assertEqual(score_to_letter_gp(60), ("C-", Decimal("1.7")))
+        self.assertEqual(score_to_letter_gp(59.9), ("D", Decimal("1.0")))
+        self.assertEqual(score_to_letter_gp(None), (None, None))
+
+    def test_calc_gpa_is_credit_weighted(self):
+        from decimal import Decimal
+        from academics.gpa import calc_gpa
+        self.assertEqual(calc_gpa([(95, 3), (50, 1)]), Decimal("3.48"))  # (12.9 + 1.0) / 4
+        self.assertIsNone(calc_gpa([]))
+        self.assertIsNone(calc_gpa([(None, 3)]))
+
+    def test_credits_page_shows_gpa_only_for_graded_courses(self):
+        teacher = User.objects.create_user("gpa_t", password="pw12345!")
+        teacher.profile.role = "TEACHER"
+        teacher.profile.save()
+        student = User.objects.create_user("gpa_s", password="pw12345!")
+        done = Course.objects.create(
+            code="GPA01", name="已評定課", teacher="老師", teacher_user=teacher, classroom="A1",
+            credits=3, category="ELECTIVE", target_class="ALL", day_of_week=1, start_period=1, end_period=1)
+        ongoing = Course.objects.create(
+            code="GPA02", name="修讀中課", teacher="老師", teacher_user=teacher, classroom="A2",
+            credits=2, category="ELECTIVE", target_class="ALL", day_of_week=2, start_period=1, end_period=1)
+        Enrollment.objects.create(user=student, course=done)
+        Enrollment.objects.create(user=student, course=ongoing)
+        StudentGrade.objects.create(
+            user=student, course=done, attendance_score=100, attitude_score=100,
+            assignment_score=100, quiz_score=100, midterm_score=90, final_score=90)  # 總成績 95
+        StudentGrade.objects.create(user=student, course=ongoing, attendance_score=90)  # 未評定完
+
+        self.client.force_login(student)
+        res = self.client.get(reverse("academics:credits"))
+        self.assertEqual(res.status_code, 200)
+        from decimal import Decimal
+        self.assertEqual(res.context["gpa"], Decimal("4.30"))   # 修讀中課程不計入
+        self.assertEqual(res.context["gpa_course_count"], 1)
+        letters = {i["course"].code: i["letter"] for i in res.context["courses"]}
+        self.assertEqual(letters["GPA01"], "A+")
+        self.assertIsNone(letters["GPA02"])

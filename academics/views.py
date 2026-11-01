@@ -8,6 +8,7 @@ from django.views.decorators.http import require_POST
 
 from pages.models import Course, Enrollment, UserProfile
 from .models import CourseGradingPolicy, StudentGrade
+from .gpa import calc_gpa, score_to_letter_gp
 
 # 學校正式畢業學分門檻
 GRADUATION_CREDITS = 128
@@ -101,6 +102,8 @@ def credit_progress(request):
     required_count = 0
     elective_count = 0
 
+    gpa_items = []
+
     for enr in enrollments:
         c = enr.course
         grade_obj, _ = StudentGrade.objects.get_or_create(user=request.user, course=c)
@@ -130,7 +133,14 @@ def credit_progress(request):
 
         policy = getattr(c, 'grading_policy', None)
 
+        # 只有已評定（及格或不及格）的課程才納入 GPA，修讀中不計
+        letter, gp = score_to_letter_gp(tot_score) if passed is not None else (None, None)
+        if passed is not None:
+            gpa_items.append((tot_score, c.credits))
+
         course_items.append({
+            'letter': letter,
+            'gp': gp,
             'course': c,
             'grade': grade_obj,
             'policy': policy,
@@ -162,6 +172,8 @@ def credit_progress(request):
         'elective_course_count': elective_count,
         'in_progress_credits': in_progress_credits,
         'progress_percent': percent,
+        'gpa': calc_gpa(gpa_items),
+        'gpa_course_count': len(gpa_items),
         'user_role': user_role,
         # 相容歷史變數名稱
         'total_credits': passed_credits,
