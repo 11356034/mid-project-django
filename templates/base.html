@@ -946,6 +946,11 @@ body {
                             <span><strong>{{ request.user.first_name|default:request.user.username }}</strong> ({{ request.user.profile.student_class|default:"資管一甲" }})</span>
                         {% endif %}
                     </div>
+                    {% if request.user.profile.role == 'STUDENT' %}
+                    <a href="{% url 'academics:credits' %}" class="btn-settings" title="學分進度">
+                        <i class="fa-solid fa-graduation-cap"></i> 學分進度
+                    </a>
+                    {% endif %}
                     <a href="{% url 'pages:profile_settings' %}" class="btn-settings" title="個人設定">
                         <i class="fa-solid fa-gear"></i> 個人設定
                     </a>

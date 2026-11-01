@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+
+{% block title %}學分進度追蹤{% endblock %}
+
+{% block extra_head %}
+<style>
+.credit-page{max-width:1000px;margin:0 auto}.credit-card{background:#fff;border:1px solid #dee2e6;border-radius:10px;padding:22px;margin-bottom:18px;box-shadow:0 2px 8px rgba(0,0,0,.04)}
+.credit-title{color:#1b365d;margin-bottom:8px}.credit-muted{color:#6c757d}.credit-progress{height:14px;background:#e9ecef;border-radius:20px;overflow:hidden;margin:12px 0}.credit-progress>span{display:block;height:100%;background:#198754;border-radius:20px}
+.credit-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.credit-stat{background:#f4f6f9;border-radius:8px;padding:16px}.credit-stat strong{display:block;font-size:25px;color:#1b365d}.credit-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.credit-form p{margin:0}.credit-form label{display:block;font-weight:600;margin-bottom:5px}.form-control{width:100%;padding:10px;border:1px solid #ced4da;border-radius:6px;background:#fff}.credit-btn{border:0;border-radius:6px;padding:10px 16px;background:#1b5e9b;color:#fff;cursor:pointer;font-weight:600}.credit-delete{background:#dc3545;padding:6px 10px;font-size:12px}.credit-table{width:100%;border-collapse:collapse}.credit-table th,.credit-table td{padding:11px;border-bottom:1px solid #e9ecef;text-align:left}.credit-table th{background:#f4f6f9}.credit-alert{padding:10px 14px;background:#d1e7dd;color:#0f5132;border-radius:6px;margin-bottom:12px}
+@media(max-width:650px){.credit-stats{grid-template-columns:1fr}.credit-form{grid-template-columns:1fr}.credit-table{font-size:13px}.credit-card{padding:15px}}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="credit-page">
+    <div class="credit-card">
+        <h2 class="credit-title"><i class="fa-solid fa-graduation-cap"></i> 我的學分進度</h2>
+        <p class="credit-muted">這裡統計你手動登錄的「已完成課程」，不會將目前尚在修讀的選課紀錄算入已取得學分。</p>
+        <h1 style="font-size:32px;color:#198754;margin-top:18px">{{ total_credits }} <small style="font-size:16px;color:#6c757d">/ {{ graduation_credits }} 學分</small></h1>
+        <div class="credit-progress"><span style="width:{{ progress_percent }}%"></span></div>
+        <p class="credit-muted">畢業學分進度 {{ progress_percent }}%（示範門檻，請依學校規定調整）</p>
+        <div class="credit-stats" style="margin-top:18px">
+            <div class="credit-stat"><span>必修學分</span><strong>{{ required_credits }}</strong><small class="credit-muted">目標 {{ required_target }} 學分</small></div>
+            <div class="credit-stat"><span>選修學分</span><strong>{{ elective_credits }}</strong><small class="credit-muted">目標 {{ elective_target }} 學分</small></div>
+            <div class="credit-stat"><span>已完成課程</span><strong>{{ records|length }}</strong><small class="credit-muted">筆修課紀錄</small></div>
+        </div>
+    </div>
+
+    <div class="credit-card">
+        <h3 class="credit-title">新增已完成課程</h3>
+        <p class="credit-muted" style="margin-bottom:14px">請輸入已經修畢的課程。這個版本先採手動登錄，之後可再串接成績資料。</p>
+        {% if messages %}{% for message in messages %}<div class="credit-alert">{{ message }}</div>{% endfor %}{% endif %}
+        <form method="post">
+            {% csrf_token %}
+            {% if form.non_field_errors %}<div class="credit-alert">{{ form.non_field_errors }}</div>{% endif %}
+            <div class="credit-form">
+                {% for field in form %}
+                <p><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{% if field.help_text %}<small class="credit-muted">{{ field.help_text }}</small>{% endif %}{% for error in field.errors %}<small style="color:#dc3545">{{ error }}</small>{% endfor %}</p>
+                {% endfor %}
+            </div>
+            <button class="credit-btn" type="submit" style="margin-top:16px"><i class="fa-solid fa-plus"></i> 新增紀錄</button>
+        </form>
+    </div>
+
+    <div class="credit-card">
+        <h3 class="credit-title">已完成課程紀錄</h3>
+        {% if records %}
+        <div style="overflow-x:auto"><table class="credit-table"><thead><tr><th>課程名稱</th><th>學期</th><th>類別</th><th>學分</th><th>成績</th><th>操作</th></tr></thead><tbody>
+        {% for record in records %}<tr><td>{{ record.course_name }}</td><td>{{ record.semester }}</td><td>{{ record.get_category_display }}</td><td>{{ record.credits }}</td><td>{{ record.grade|default:'-' }}</td><td><form method="post" action="{% url 'academics:delete_credit' record.id %}" onsubmit="return confirm('確定刪除這筆修課紀錄？')">{% csrf_token %}<button class="credit-btn credit-delete" type="submit">刪除</button></form></td></tr>{% endfor %}
+        </tbody></table></div>
+        {% else %}<p class="credit-muted">目前還沒有已完成課程紀錄，請使用上方表單新增。</p>{% endif %}
+    </div>
+    <p class="credit-muted" style="text-align:center"><a href="{% url 'pages:index' %}">返回選課系統</a></p>
+</div>
+{% endblock %}
