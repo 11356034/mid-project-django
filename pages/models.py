@@ -39,7 +39,6 @@ class Course(models.Model):
     max_students = models.PositiveIntegerField(default=50, verbose_name="選課人數上限")
     description = models.TextField(blank=True, default="", verbose_name="課程描述")
     color_tag = models.CharField(max_length=30, default="indigo", verbose_name="代表顏色")
-    ai_summary = models.TextField(blank=True, null=True, verbose_name="AI快取摘要")
 
     class Meta:
         ordering = ['day_of_week', 'start_period', 'code']

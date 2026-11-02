@@ -37,6 +37,5 @@ urlpatterns = [
     path('manage/course/<int:course_id>/edit/', views.edit_course, name='edit_course'),
     path('manage/course/<int:course_id>/delete/', views.delete_course, name='delete_course'),
     path('manage/reset-database/', views.reset_database, name='reset_database'),
-    path('manage/course/<int:course_id>/ai-summary/', views.ai_course_summary, name='ai_course_summary'),
 
 ]
